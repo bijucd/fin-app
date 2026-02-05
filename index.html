@@ -553,6 +553,62 @@
                 <button class="btn btn-primary" onclick="saveMonth()">Save</button>
             </div>
         </div>
+
+        <!-- Budget Settings View -->
+        <div id="budgetSettingsView" class="view">
+            <button class="back-button" onclick="closeBudgetSettings()">← Back to Summary</button>
+
+            <div class="header" style="margin: 0 0 24px 0; padding: 0; box-shadow: none;">
+                <h1 style="font-size: 24px;">Budget Settings</h1>
+                <div class="subtitle">Set your monthly budget for each category</div>
+            </div>
+
+            <div class="form-group">
+                <div class="form-group-title">Savings</div>
+                <div class="form-field">
+                    <label for="budget-savingsEmi-input">Savings – EMI</label>
+                    <input type="number" id="budget-savingsEmi-input" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-field" style="margin-top: 12px;">
+                    <label for="budget-savingsRecurring-input">Savings – Recurring</label>
+                    <input type="number" id="budget-savingsRecurring-input" step="0.01" placeholder="0.00">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="form-group-title">Cards / Wallets</div>
+                <div class="form-field">
+                    <label for="budget-savingsGpay-input">Savings GPay UPI</label>
+                    <input type="number" id="budget-savingsGpay-input" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-field" style="margin-top: 12px;">
+                    <label for="budget-tataNeu-input">Tata Neu Infinity</label>
+                    <input type="number" id="budget-tataNeu-input" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-field" style="margin-top: 12px;">
+                    <label for="budget-sbiOctane-input">SBI Octane</label>
+                    <input type="number" id="budget-sbiOctane-input" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-field" style="margin-top: 12px;">
+                    <label for="budget-amazonPay-input">Amazon Pay</label>
+                    <input type="number" id="budget-amazonPay-input" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-field" style="margin-top: 12px;">
+                    <label for="budget-hsbcLive-input">HSBC Live+</label>
+                    <input type="number" id="budget-hsbcLive-input" step="0.01" placeholder="0.00">
+                </div>
+            </div>
+
+            <div class="total-display" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="total-label">Total Monthly Budget</div>
+                <div class="total-amount currency" id="totalBudgetDisplay">0.00</div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="closeBudgetSettings()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveBudgetSettings()">Save Budgets</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -564,13 +620,13 @@
 
         // Budget Configuration (stored as JSON, modifiable)
         const DEFAULT_BUDGETS = {
-            "savingsEmi": 149559.00,
-            "savingsRecurring": 38726.00,
+            "savingsEmi": 147559.00,
+            "savingsRecurring": 39146.00,
             "savingsGpay": 8000.00,
             "tataNeu": 6000.00,
-            "sbiOctane": 23000.00,
-            "amazonPay": 4000.00,
-            "hsbcLive": 20000.00
+            "sbiOctane": 21000.00,
+            "amazonPay": 3000.00,
+            "hsbcLive": 18500.00
         };
 
         // Get budgets from storage or use defaults
@@ -584,24 +640,91 @@
             localStorage.setItem(BUDGET_KEY, JSON.stringify(budgets));
         }
 
-        // Show budget configuration (placeholder for future enhancement)
+        // Show budget configuration
         function showBudgetConfig() {
             const budgets = getBudgets();
-            const budgetJson = JSON.stringify(budgets, null, 2);
-            const newBudgets = prompt('Edit budgets (JSON format):\n\nNote: This is a simple editor. For better experience, edit localStorage directly in browser devtools.', budgetJson);
             
-            if (newBudgets && newBudgets !== budgetJson) {
-                try {
-                    const parsed = JSON.parse(newBudgets);
-                    saveBudgets(parsed);
-                    alert('Budgets updated successfully!');
-                    if (document.getElementById('editView').classList.contains('active')) {
-                        updateBudgetDisplay();
-                    }
-                } catch (e) {
-                    alert('Invalid JSON format. Please try again.');
+            // Load current budget values into form
+            const categories = [
+                'savingsEmi', 'savingsRecurring',
+                'savingsGpay', 'tataNeu', 'sbiOctane', 
+                'amazonPay', 'hsbcLive'
+            ];
+            
+            categories.forEach(id => {
+                const input = document.getElementById(`budget-${id}-input`);
+                if (input) {
+                    input.value = budgets[id] || '';
                 }
+            });
+            
+            // Calculate and display total budget
+            updateTotalBudgetDisplay();
+            
+            // Listen for input changes to update total
+            categories.forEach(id => {
+                const input = document.getElementById(`budget-${id}-input`);
+                if (input) {
+                    input.addEventListener('input', updateTotalBudgetDisplay);
+                }
+            });
+            
+            // Show budget settings view
+            document.getElementById('homeView').classList.remove('active');
+            document.getElementById('budgetSettingsView').classList.add('active');
+        }
+        
+        // Update total budget display in settings view
+        function updateTotalBudgetDisplay() {
+            const categories = [
+                'savingsEmi', 'savingsRecurring',
+                'savingsGpay', 'tataNeu', 'sbiOctane', 
+                'amazonPay', 'hsbcLive'
+            ];
+            
+            let total = 0;
+            categories.forEach(id => {
+                const input = document.getElementById(`budget-${id}-input`);
+                if (input) {
+                    total += parseFloat(input.value) || 0;
+                }
+            });
+            
+            document.getElementById('totalBudgetDisplay').textContent = formatAmount(total);
+        }
+        
+        // Save budget settings
+        function saveBudgetSettings() {
+            const categories = [
+                'savingsEmi', 'savingsRecurring',
+                'savingsGpay', 'tataNeu', 'sbiOctane', 
+                'amazonPay', 'hsbcLive'
+            ];
+            
+            const newBudgets = {};
+            categories.forEach(id => {
+                const input = document.getElementById(`budget-${id}-input`);
+                if (input) {
+                    newBudgets[id] = parseFloat(input.value) || 0;
+                }
+            });
+            
+            // Save to localStorage as JSON
+            saveBudgets(newBudgets);
+            
+            // Update display if in edit view
+            if (document.getElementById('editView').classList.contains('active')) {
+                updateBudgetDisplay();
             }
+            
+            // Return to home view
+            closeBudgetSettings();
+        }
+        
+        // Close budget settings view
+        function closeBudgetSettings() {
+            document.getElementById('budgetSettingsView').classList.remove('active');
+            document.getElementById('homeView').classList.add('active');
         }
 
         // Initialize the app
@@ -815,6 +938,7 @@
         // Show home view
         function showHomeView() {
             document.getElementById('editView').classList.remove('active');
+            document.getElementById('budgetSettingsView').classList.remove('active');
             document.getElementById('homeView').classList.add('active');
             loadMonthList();
         }
