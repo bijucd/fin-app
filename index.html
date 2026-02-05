@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monthly Expenses</title>
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
+  padding: 16px;
+  background: #f4f6f8;
+}
+h2 { margin-top: 0; }
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+input, select, textarea {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+.amount {
+  width: 120px;
+  text-align: right;
+}
+button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: #007aff;
+  color: white;
+  font-size: 16px;
+}
+button:active { opacity: 0.8; }
+.month-item {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+.month-item:last-child { border-bottom: none; }
+.total {
+  font-weight: bold;
+  font-size: 18px;
+  text-align: right;
+}
+.small { font-size: 12px; color: #666; }
+</style>
+</head>
+
+<body>
+
+<h2>Monthly Expenses</h2>
+
+<div class="card">
+  <div class="row">
+    <select id="month"></select>
+    <select id="year"></select>
+  </div>
+
+  <div id="categories"></div>
+
+  <div class="row total">
+    Total ₹ <span id="total">0</span>
+  </div>
+
+  <textarea id="remarks" rows="3" placeholder="Remarks / unexpected expenses..."></textarea>
+
+  <br>
+  <button onclick="saveMonth()">Save / Update Month</button>
+</div>
+
+<div class="card">
+  <h3>Month-wise Summary</h3>
+  <div id="summary"></div>
+</div>
+
+<script>
+const categoryList = [
+  "Savings – EMI",
+  "Savings – Recurring",
+  "Savings GPay UPI",
+  "Tata Neu Infinity",
+  "SBI Octane Card",
+  "Octane GPay",
+  "Amazon Pay",
+  "HSBC Live+"
+];
+
+const monthSel = document.getElementById("month");
+const yearSel = document.getElementById("year");
+const categoriesDiv = document.getElementById("categories");
+const totalSpan = document.getElementById("total");
+const remarksInput = document.getElementById("remarks");
+
+function initSelectors() {
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  months.forEach((m,i)=> {
+    monthSel.innerHTML += `<option value="${i}">${m}</option>`;
+  });
+
+  const currentYear = new Date().getFullYear();
+  for(let y=currentYear;y>=currentYear-5;y--){
+    yearSel.innerHTML += `<option value="${y}">${y}</option>`;
+  }
+
+  const now = new Date();
+  monthSel.value = now.getMonth();
+  yearSel.value = now.getFullYear();
+}
+
+function initCategories() {
+  categoriesDiv.innerHTML = "";
+  categoryList.forEach(cat=>{
+    const div = document.createElement("div");
+    div.className = "row";
+    div.innerHTML = `
+      <div>${cat}</div>
+      <input class="amount" type="number" min="0" data-cat="${cat}" oninput="calcTotal()">
+    `;
+    categoriesDiv.appendChild(div);
+  });
+}
+
+function calcTotal() {
+  let sum = 0;
+  document.querySelectorAll(".amount").forEach(i=>{
+    sum += Number(i.value || 0);
+  });
+  totalSpan.textContent = sum.toLocaleString("en-IN");
+}
+
+function getKey() {
+  return `${yearSel.value}-${monthSel.value}`;
+}
+
+function saveMonth() {
+  const data = JSON.parse(localStorage.getItem("expenses") || "{}");
+  const entry = {};
+  let total = 0;
+
+  document.querySelectorAll(".amount").forEach(i=>{
+    const val = Number(i.value || 0);
+    entry[i.dataset.cat] = val;
+    total += val;
+  });
+
+  entry.total = total;
+  entry.remarks = remarksInput.value;
+
+  data[getKey()] = entry;
+  localStorage.setItem("expenses", JSON.stringify(data));
+  renderSummary();
+  alert("Saved");
+}
+
+function loadMonth(key) {
+  const data = JSON.parse(localStorage.getItem("expenses") || "{}");
+  if(!data[key]) return;
+
+  const [y,m] = key.split("-");
+  yearSel.value = y;
+  monthSel.value = m;
+
+  document.querySelectorAll(".amount").forEach(i=>{
+    i.value = data[key][i.dataset.cat] || "";
+  });
+
+  remarksInput.value = data[key].remarks || "";
+  calcTotal();
+}
+
+function renderSummary() {
+  const data = JSON.parse(localStorage.getItem("expenses") || "{}");
+  const summary = document.getElementById("summary");
+  summary.innerHTML = "";
+
+  Object.keys(data).sort().reverse().forEach(key=>{
+    const [y,m] = key.split("-");
+    const monthName = monthSel.options[m].text;
+    summary.innerHTML += `
+      <div class="month-item" onclick="loadMonth('${key}')">
+        ${monthName} ${y}
+        <div class="small">₹ ${data[key].total.toLocaleString("en-IN")}</div>
+      </div>
+    `;
+  });
+}
+
+initSelectors();
+initCategories();
+renderSummary();
+</script>
+
+</body>
+</html>
