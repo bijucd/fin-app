@@ -210,6 +210,7 @@
 
         input[type="number"] {
             text-align: right;
+            padding-right: 32px;
         }
 
         textarea {
@@ -290,11 +291,16 @@
             justify-content: space-between;
             align-items: center;
             margin-top: 4px;
-            font-size: 13px;
+            font-size: 12px;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         .budget-label {
             color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .budget-amount {
@@ -303,14 +309,17 @@
 
         .budget-remaining {
             color: var(--success-color);
+            white-space: nowrap;
         }
 
         .budget-exceeded {
             color: var(--danger-color);
+            white-space: nowrap;
         }
 
         .budget-warning {
             color: #FF9500;
+            white-space: nowrap;
         }
 
         .input-wrapper {
@@ -319,13 +328,14 @@
 
         .input-indicator {
             position: absolute;
-            right: 12px;
+            right: 16px;
             top: 50%;
             transform: translateY(-50%);
             width: 8px;
             height: 8px;
             border-radius: 50%;
             pointer-events: none;
+            z-index: 1;
         }
 
         .indicator-ok {
@@ -388,6 +398,90 @@
             opacity: 0.5;
         }
 
+        /* Chart View Styles */
+        .chart-container {
+            background-color: var(--card-background);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .chart-canvas {
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto 24px;
+            display: block;
+        }
+
+        .legend {
+            list-style: none;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            margin-bottom: 8px;
+            background-color: var(--background);
+            border-radius: 8px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .legend-label {
+            flex: 1;
+            font-size: 14px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+        }
+
+        .legend-value {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-primary);
+            margin-left: 8px;
+        }
+
+        .legend-percentage {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-left: 8px;
+        }
+
+        .chart-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            text-align: center;
+            color: var(--text-primary);
+        }
+
+        .view-chart-btn {
+            padding: 8px 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 8px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .view-chart-btn:active {
+            opacity: 0.7;
+        }
+
         /* iOS-specific adjustments */
         @supports (-webkit-touch-callout: none) {
             body {
@@ -396,12 +490,58 @@
         }
 
         /* Responsive adjustments */
-        @media (max-width: 375px) {
+        @media (max-width: 430px) {
+            .container {
+                padding: 12px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
             .month-total {
                 font-size: 18px;
             }
+            
             .total-amount {
                 font-size: 32px;
+            }
+            
+            .budget-info {
+                font-size: 11px;
+            }
+            
+            .budget-summary-amount {
+                font-size: 16px;
+            }
+            
+            label {
+                font-size: 14px;
+            }
+            
+            input[type="number"] {
+                font-size: 16px;
+                padding-right: 28px;
+            }
+            
+            .input-indicator {
+                right: 12px;
+                width: 7px;
+                height: 7px;
+            }
+        }
+        
+        @media (max-width: 375px) {
+            .budget-summary {
+                padding: 16px;
+            }
+            
+            .budget-summary-label {
+                font-size: 13px;
+            }
+            
+            .budget-summary-amount {
+                font-size: 15px;
             }
         }
     </style>
@@ -414,6 +554,12 @@
                 <h1>Monthly Expense Log</h1>
                 <div class="subtitle">Track your monthly expenses</div>
                 <button class="settings-button" onclick="showBudgetConfig()" title="Budget Settings">⚙️</button>
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                <button class="btn btn-secondary" onclick="exportData()" style="flex: 1; padding: 12px; font-size: 14px;">📥 Export Data</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="flex: 1; padding: 12px; font-size: 14px;">📤 Import Data</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
             </div>
 
             <button class="add-button" onclick="showEditView()">+ Add / Edit Month</button>
@@ -609,6 +755,17 @@
                 <button class="btn btn-primary" onclick="saveBudgetSettings()">Save Budgets</button>
             </div>
         </div>
+
+        <!-- Chart View -->
+        <div id="chartView" class="view">
+            <button class="back-button" onclick="closeChartView()">← Back to Summary</button>
+
+            <div class="chart-container">
+                <div class="chart-title" id="chartMonthTitle">Expense Breakdown</div>
+                <canvas id="pieChart" class="chart-canvas" width="300" height="300"></canvas>
+                <ul class="legend" id="chartLegend"></ul>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -727,6 +884,185 @@
             document.getElementById('homeView').classList.add('active');
         }
 
+        // Show chart view
+        function showChartView(month, year) {
+            const key = getMonthKey(month, year);
+            const expenses = getAllExpenses();
+            const data = expenses[key];
+            
+            if (!data) return;
+            
+            const monthName = MONTH_NAMES[month];
+            document.getElementById('chartMonthTitle').textContent = `${monthName} ${year} - Expense Breakdown`;
+            
+            // Prepare chart data
+            const categories = [
+                { id: 'savingsEmi', label: 'Savings EMI', value: data.savingsEmi || 0 },
+                { id: 'savingsRecurring', label: 'Savings Recurring', value: data.savingsRecurring || 0 },
+                { id: 'savingsGpay', label: 'Savings GPay UPI', value: data.savingsGpay || 0 },
+                { id: 'tataNeu', label: 'Tata Neu Infinity', value: data.tataNeu || 0 },
+                { id: 'sbiOctane', label: 'SBI Octane', value: data.sbiOctane || 0 },
+                { id: 'amazonPay', label: 'Amazon Pay', value: data.amazonPay || 0 },
+                { id: 'hsbcLive', label: 'HSBC Live+', value: data.hsbcLive || 0 }
+            ];
+            
+            // Filter out zero values
+            const chartData = categories.filter(cat => cat.value > 0);
+            
+            if (chartData.length === 0) {
+                alert('No expenses recorded for this month');
+                return;
+            }
+            
+            // Draw chart
+            drawPieChart(chartData, data.total);
+            
+            // Show view
+            document.getElementById('homeView').classList.remove('active');
+            document.getElementById('chartView').classList.add('active');
+        }
+        
+        // Close chart view
+        function closeChartView() {
+            document.getElementById('chartView').classList.remove('active');
+            document.getElementById('homeView').classList.add('active');
+        }
+        
+        // Export data as JSON file
+        function exportData() {
+            const expenses = getAllExpenses();
+            const budgets = getBudgets();
+            
+            const exportData = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                expenses: expenses,
+                budgets: budgets
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `expense-log-backup-${new Date().toISOString().split('T')[0]}.json`;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            alert('Data exported successfully!');
+        }
+        
+        // Import data from JSON file
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    // Validate data structure
+                    if (!importedData.expenses) {
+                        throw new Error('Invalid file format: missing expenses data');
+                    }
+                    
+                    // Confirm before overwriting
+                    const confirm = window.confirm(
+                        'This will replace all existing data. Are you sure you want to continue?\n\n' +
+                        'Tip: Export your current data first as a backup.'
+                    );
+                    
+                    if (!confirm) {
+                        event.target.value = ''; // Reset file input
+                        return;
+                    }
+                    
+                    // Import expenses
+                    saveAllExpenses(importedData.expenses);
+                    
+                    // Import budgets if available
+                    if (importedData.budgets) {
+                        saveBudgets(importedData.budgets);
+                    }
+                    
+                    // Refresh the display
+                    loadMonthList();
+                    
+                    alert('Data imported successfully!');
+                    
+                } catch (error) {
+                    alert('Error importing data: ' + error.message + '\n\nPlease make sure the file is a valid expense log backup.');
+                } finally {
+                    event.target.value = ''; // Reset file input
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        // Draw pie chart
+        function drawPieChart(data, total) {
+            const canvas = document.getElementById('pieChart');
+            const ctx = canvas.getContext('2d');
+            const legend = document.getElementById('chartLegend');
+            
+            // Clear canvas and legend
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            legend.innerHTML = '';
+            
+            // Colors for categories
+            const colors = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
+                '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
+                '#F8B195', '#C06C84'
+            ];
+            
+            // Calculate center and radius
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 10;
+            
+            let currentAngle = -Math.PI / 2; // Start at top
+            
+            data.forEach((item, index) => {
+                const percentage = (item.value / total) * 100;
+                const sliceAngle = (item.value / total) * 2 * Math.PI;
+                
+                // Draw slice
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fillStyle = colors[index % colors.length];
+                ctx.fill();
+                
+                // Add white border between slices
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                currentAngle += sliceAngle;
+                
+                // Create legend item
+                const legendItem = document.createElement('li');
+                legendItem.className = 'legend-item';
+                legendItem.innerHTML = `
+                    <div class="legend-label">
+                        <div class="legend-color" style="background-color: ${colors[index % colors.length]}"></div>
+                        ${item.label}
+                    </div>
+                    <div>
+                        <span class="legend-value currency">${formatAmount(item.value)}</span>
+                        <span class="legend-percentage">(${percentage.toFixed(1)}%)</span>
+                    </div>
+                `;
+                legend.appendChild(legendItem);
+            });
+        }
+
         // Initialize the app
         function init() {
             populateYearDropdown();
@@ -808,6 +1144,8 @@
                 if (data.remarks) {
                     html += `<div class="month-remarks">${escapeHtml(data.remarks)}</div>`;
                 }
+                
+                html += `<button class="view-chart-btn" onclick="event.stopPropagation(); showChartView(${parseInt(month)}, ${parseInt(year)});">📊 View Chart</button>`;
 
                 li.innerHTML = html;
                 monthList.appendChild(li);
@@ -939,6 +1277,7 @@
         function showHomeView() {
             document.getElementById('editView').classList.remove('active');
             document.getElementById('budgetSettingsView').classList.remove('active');
+            document.getElementById('chartView').classList.remove('active');
             document.getElementById('homeView').classList.add('active');
             loadMonthList();
         }
@@ -982,6 +1321,16 @@
         function clearForm() {
             const inputs = document.querySelectorAll('#editView input[type="number"], #editView textarea');
             inputs.forEach(input => input.value = '');
+            
+            // Set default values for constant expenses from budget
+            const budgets = getBudgets();
+            if (budgets.savingsEmi) {
+                document.getElementById('savingsEmi').value = budgets.savingsEmi;
+            }
+            if (budgets.savingsRecurring) {
+                document.getElementById('savingsRecurring').value = budgets.savingsRecurring;
+            }
+            
             calculateTotal();
             updateBudgetDisplay();
         }
