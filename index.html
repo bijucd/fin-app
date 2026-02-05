@@ -477,28 +477,12 @@
             <div class="form-group">
                 <div class="form-group-title">Savings</div>
                 <div class="form-field">
-                    <label for="homeLoanEmi">Home Loan EMI</label>
+                    <label for="savingsEmi">Savings – EMI</label>
                     <div class="input-wrapper">
-                        <input type="number" id="homeLoanEmi" step="0.01" placeholder="0.00" oninput="calculateTotal()">
-                        <span class="input-indicator" id="indicator-homeLoanEmi"></span>
+                        <input type="number" id="savingsEmi" step="0.01" placeholder="0.00" oninput="calculateTotal()">
+                        <span class="input-indicator" id="indicator-savingsEmi"></span>
                     </div>
-                    <div class="budget-info" id="budget-homeLoanEmi"></div>
-                </div>
-                <div class="form-field" style="margin-top: 12px;">
-                    <label for="carLoan">Car Loan</label>
-                    <div class="input-wrapper">
-                        <input type="number" id="carLoan" step="0.01" placeholder="0.00" oninput="calculateTotal()">
-                        <span class="input-indicator" id="indicator-carLoan"></span>
-                    </div>
-                    <div class="budget-info" id="budget-carLoan"></div>
-                </div>
-                <div class="form-field" style="margin-top: 12px;">
-                    <label for="goldLoan">Gold Loan</label>
-                    <div class="input-wrapper">
-                        <input type="number" id="goldLoan" step="0.01" placeholder="0.00" oninput="calculateTotal()">
-                        <span class="input-indicator" id="indicator-goldLoan"></span>
-                    </div>
-                    <div class="budget-info" id="budget-goldLoan"></div>
+                    <div class="budget-info" id="budget-savingsEmi"></div>
                 </div>
                 <div class="form-field" style="margin-top: 12px;">
                     <label for="savingsRecurring">Savings – Recurring</label>
@@ -580,13 +564,11 @@
 
         // Budget Configuration (stored as JSON, modifiable)
         const DEFAULT_BUDGETS = {
-            "homeLoanEmi": 80000.00,
-            "carLoan": 17559.00,
-            "goldLoan": 55000.00,
+            "savingsEmi": 149559.00,
             "savingsRecurring": 38726.00,
             "savingsGpay": 8000.00,
             "tataNeu": 6000.00,
-            "sbiOctane": 20000.00,
+            "sbiOctane": 23000.00,
             "amazonPay": 4000.00,
             "hsbcLive": 20000.00
         };
@@ -727,7 +709,7 @@
         // Calculate and display total
         function calculateTotal() {
             const categories = [
-                'homeLoanEmi', 'carLoan', 'goldLoan', 'savingsRecurring',
+                'savingsEmi', 'savingsRecurring',
                 'savingsGpay', 'tataNeu', 'sbiOctane', 
                 'amazonPay', 'hsbcLive'
             ];
@@ -748,7 +730,7 @@
         function updateBudgetDisplay() {
             const budgets = getBudgets();
             const categories = [
-                'homeLoanEmi', 'carLoan', 'goldLoan', 'savingsRecurring',
+                'savingsEmi', 'savingsRecurring',
                 'savingsGpay', 'tataNeu', 'sbiOctane', 
                 'amazonPay', 'hsbcLive'
             ];
@@ -856,17 +838,7 @@
             const data = expenses[key];
 
             if (data) {
-                // Handle backward compatibility: if old savingsEmi exists, split it equally or use new fields
-                if (data.savingsEmi && !data.homeLoanEmi && !data.carLoan && !data.goldLoan) {
-                    // Old data format - don't auto-split, leave empty for user to enter
-                    document.getElementById('homeLoanEmi').value = '';
-                    document.getElementById('carLoan').value = '';
-                    document.getElementById('goldLoan').value = '';
-                } else {
-                    document.getElementById('homeLoanEmi').value = data.homeLoanEmi || '';
-                    document.getElementById('carLoan').value = data.carLoan || '';
-                    document.getElementById('goldLoan').value = data.goldLoan || '';
-                }
+                document.getElementById('savingsEmi').value = data.savingsEmi || '';
                 document.getElementById('savingsRecurring').value = data.savingsRecurring || '';
                 document.getElementById('savingsGpay').value = data.savingsGpay || '';
                 document.getElementById('tataNeu').value = data.tataNeu || '';
@@ -902,9 +874,7 @@
             const key = getMonthKey(month, year);
 
             const data = {
-                homeLoanEmi: parseFloat(document.getElementById('homeLoanEmi').value) || 0,
-                carLoan: parseFloat(document.getElementById('carLoan').value) || 0,
-                goldLoan: parseFloat(document.getElementById('goldLoan').value) || 0,
+                savingsEmi: parseFloat(document.getElementById('savingsEmi').value) || 0,
                 savingsRecurring: parseFloat(document.getElementById('savingsRecurring').value) || 0,
                 savingsGpay: parseFloat(document.getElementById('savingsGpay').value) || 0,
                 tataNeu: parseFloat(document.getElementById('tataNeu').value) || 0,
@@ -916,7 +886,7 @@
             };
 
             // Calculate total
-            data.total = data.homeLoanEmi + data.carLoan + data.goldLoan + data.savingsRecurring +
+            data.total = data.savingsEmi + data.savingsRecurring +
                         data.savingsGpay + data.tataNeu + data.sbiOctane +
                         data.amazonPay + data.hsbcLive;
 
